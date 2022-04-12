@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Sequence, Mapping
+from typing import Sequence, Mapping, Any
 from uuid import uuid4
 
 from pymongo import MongoClient
@@ -7,6 +7,8 @@ from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 from elastic_transport import ObjectApiResponse
 
+
+Document = Filter = Mapping[str, Any]
 
 class DatabaseServer(ABC):
     @abstractmethod
@@ -37,9 +39,9 @@ class MongoDB(DatabaseServer):
 
     def connect(self):
         self.client = MongoClient(self.host)
-        self.client
+        return True
 
-    def insert_data(self, database_name: str, document_name: str, data: Mapping[str, str] or Sequence[Mapping[str, str]]):
+    def insert_data(self, database_name: str, document_name: str, data: Document or Sequence[Document]):
         db = self.client[database_name]
         collection = db[document_name]
         if not isinstance(data, Sequence):
@@ -47,14 +49,19 @@ class MongoDB(DatabaseServer):
         else:
             collection.insert_many(data)
 
-    def search_data(self, database_name: str, document_name: str):
+    def search_data(self, database_name: str, document_name: str) -> Sequence[Document]:
         db = self.client[database_name]
         collection = db[document_name]
         items = collection.find()
-        return items
+        return [item for item in items]
 
-    def update_data(self):
-        pass
+    def update_data(self, database_name: str, document_name: str, filters: Filter, update: Document):
+        db = self.client[database_name]
+        collection = db[document_name]
+        if not isinstance(update, Sequence):
+            collection.update_one(filters, update)
+        else:
+            collection.update_many(filters, update)
 
     def delete_data(self):
         pass
@@ -67,8 +74,9 @@ class ES(DatabaseServer):
 
     def connect(self, username: str, password: str):
         self.es = Elasticsearch(hosts=self.host, basic_auth=(username, password), verify_certs=False)
+        return True
 
-    def insert_data(self, index_name: str, data: Mapping[str, str] or Sequence[Mapping[str, str]]):
+    def insert_data(self, index_name: str, data: Mapping[str, str] or Sequence[Document]):
         if not isinstance(data, Sequence):
             self.es.create(index=index_name, id=uuid4(), document=data)
         else:
@@ -89,11 +97,14 @@ class ES(DatabaseServer):
 
 
 if __name__ == "__main__":
-    mongo_server = MongoDB(host="localhost:27017")
+    
+    import constant as const
+
+    mongo_server = MongoDB(host=const.HOST_MONGODB)
     mongo_server.connect()
 
-    es_server = ES(host="https://localhost:9200")
-    es_server.connect(username="elastic", password="ukPIFFhT0YVkh-epZtoE")
+    es_server = ES(host=const.HOST_ES)
+    es_server.connect(username=const.USER_ES, password=const.PWD_ES)
 
     dummy_data = {"name": "rakka", "job": "entepreneur"}
     print(es_server.es)
