@@ -1,11 +1,11 @@
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
-from typing import List, Dict
+from typing import Sequence, Mapping
 from uuid import uuid4
 
 from pymongo import MongoClient
 from elasticsearch import Elasticsearch
-from elasticsearch.helpers import streaming_bulk
+from elasticsearch.helpers import bulk
+from elastic_transport import ObjectApiResponse
 
 
 class DatabaseServer(ABC):
@@ -39,7 +39,7 @@ class MongoDB(DatabaseServer):
         self.client = MongoClient(self.host)
         self.client
 
-    def insert_data(self, database_name: str, document_name: str, data: Dict or List[Dict]):
+    def insert_data(self, database_name: str, document_name: str, data: Mapping[str, str] or Sequence[Mapping[str, str]]):
         db = self.client[database_name]
         collection = db[document_name]
         if not isinstance(data, Sequence):
@@ -47,8 +47,11 @@ class MongoDB(DatabaseServer):
         else:
             collection.insert_many(data)
 
-    def search_data(self):
-        pass
+    def search_data(self, database_name: str, document_name: str):
+        db = self.client[database_name]
+        collection = db[document_name]
+        items = collection.find()
+        return items
 
     def update_data(self):
         pass
@@ -65,17 +68,18 @@ class ES(DatabaseServer):
     def connect(self, username: str, password: str):
         self.es = Elasticsearch(hosts=self.host, basic_auth=(username, password), verify_certs=False)
 
-    def insert_data(self, index_name: str, data: Dict or List[Dict]):
+    def insert_data(self, index_name: str, data: Mapping[str, str] or Sequence[Mapping[str, str]]):
         if not isinstance(data, Sequence):
             self.es.create(index=index_name, id=uuid4(), document=data)
         else:
             actions = ({"_op_type": "create", "_index": index_name, "_id": uuid4(), "_source": doc} for doc in data)
             for act in actions:
                 print(act)
-            self.es.bulk(operations=actions)
+            bulk(client=self.es, actions=actions)
 
-    def search_data(self):
-        pass
+    def search_data(self, index_name: str) -> ObjectApiResponse:
+        items = self.es.search(index=index_name)
+        return items
 
     def update_data(self):
         pass
@@ -91,4 +95,5 @@ if __name__ == "__main__":
     es_server = ES(host="https://localhost:9200")
     es_server.connect(username="elastic", password="ukPIFFhT0YVkh-epZtoE")
 
+    dummy_data = {"name": "rakka", "job": "entepreneur"}
     print(es_server.es)
