@@ -63,37 +63,45 @@ class MongoDB(DatabaseServer):
         else:
             collection.update_many(filters, update)
 
-    def delete_data(self):
-        pass
+    def delete_data(self, database_name: str, document_name: str, filters: Filter, how: str="one"):
+        db = self.client[database_name]
+        collection = db[document_name]
+        if how == "one":
+            collection.delete_one(filters)
+        elif how == "many":
+            collection.delete_many(filters)
+        else:
+            raise ValueError(f"Delete method is either 'single' or 'many' but you type {how}")
+
 
 
 class ES(DatabaseServer):
     def __init__(self, host: str):
         self.host = host
-        self.es = None
+        self.client = None
 
     def connect(self, username: str, password: str):
-        self.es = Elasticsearch(hosts=self.host, basic_auth=(username, password), verify_certs=False)
+        self.client = Elasticsearch(hosts=self.host, basic_auth=(username, password), verify_certs=False)
         return True
 
     def insert_data(self, index_name: str, data: Mapping[str, str] or Sequence[Document]):
         if not isinstance(data, Sequence):
-            self.es.create(index=index_name, id=uuid4(), document=data)
+            self.client.create(index=index_name, id=uuid4(), document=data)
         else:
             actions = ({"_op_type": "create", "_index": index_name, "_id": uuid4(), "_source": doc} for doc in data)
             for act in actions:
                 print(act)
-            bulk(client=self.es, actions=actions)
+            bulk(client=self.client, actions=actions)
 
     def search_data(self, index_name: str) -> ObjectApiResponse:
-        items = self.es.search(index=index_name)
+        items = self.client.search(index=index_name)
         return items
 
     def update_data(self):
         pass
 
     def delete_data(self, index_name:str, id_: str):
-        self.es.delete(index=index_name, id=id_)
+        self.client.delete(index=index_name, id=id_)
 
 
 if __name__ == "__main__":
@@ -107,4 +115,4 @@ if __name__ == "__main__":
     es_server.connect(username=const.USER_ES, password=const.PWD_ES)
 
     dummy_data = {"name": "rakka", "job": "entepreneur"}
-    print(es_server.es)
+    print(es_server.client)
