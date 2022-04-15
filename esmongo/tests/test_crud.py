@@ -12,39 +12,38 @@ dummy_index = "pytest"
 
 class TestMongoDB:
     # Initial connection
-    server = MongoDB(const.HOST_MONGODB)
-    server.connect()
-
-    # Choose db and collection
-    db = server.client[dummy_index]
-    collection = db[dummy_index]
+    server = MongoDB(host=const.HOST_MONGODB, database_name=dummy_index, document_name=dummy_index)
 
     # Drop collection before start
-    collection.drop()
+    server.drop_documents()
 
     def test_insert_single_data(self):
-        self.collection.insert_one(dummy_data_1)
-        assert self.collection.count_documents({}) == 1
+        self.server.insert_data(data=dummy_data_1)
+        assert self.server.count_documents(filters={}) == 1
 
     def test_insert_many_data(self):
-        self.collection.insert_many([dummy_data_2, dummy_data_3])
-        assert self.collection.count_documents({}) == 3
+        self.server.insert_data(data=[dummy_data_2, dummy_data_3])
+        assert self.server.count_documents(filters={}) == 3
+
+    def test_search_data(self):
+        items = self.server.search_data(filters={})
+        assert len(items) == 3
 
     def test_update_single_data(self):
-        self.collection.update_one(dummy_filter_update, dummy_update)
-        assert self.collection.count_documents(dummy_filter_update) == 1
+        self.server.update_data(filters=dummy_filter_update, update=dummy_update)
+        assert self.server.count_documents(filters=dummy_filter_update) == 1
 
     def test_update_many_data(self):
-        self.collection.update_many(dummy_filter_update, dummy_update)
-        assert self.collection.count_documents(dummy_filter_update) == 0
+        self.server.update_data(filters=dummy_filter_update, update=dummy_update)
+        assert self.server.count_documents(filters=dummy_filter_update) == 0
 
     def test_delete_single_data(self):
-        self.collection.delete_one(dummy_filter_delete_1)
-        assert self.collection.count_documents(dummy_filter_delete_1) == 0
+        self.server.delete_data(dummy_filter_delete_1, how="one")
+        assert self.server.count_documents(filters=dummy_filter_delete_1) == 0
 
     def test_delete_many_data(self):
-        self.collection.delete_many(dummy_filter_delete_2)
-        assert self.collection.count_documents(dummy_filter_delete_2) == 0
+        self.server.delete_data(dummy_filter_delete_2, how="many")
+        assert self.server.count_documents(filters=dummy_filter_delete_2) == 0
     
 
 

@@ -12,10 +12,6 @@ Document = Filter = Mapping[str, Any]
 
 class DatabaseServer(ABC):
     @abstractmethod
-    def connect(self, *args, **kwargs):
-        pass
-    
-    @abstractmethod
     def insert_data(self, data, **kwargs):
         pass
     
@@ -33,43 +29,42 @@ class DatabaseServer(ABC):
 
 
 class MongoDB(DatabaseServer):
-    def __init__(self, host: str):
+    def __init__(self, host: str, database_name: str, document_name: str):
         self.host = host
-        self.client = None
-
-    def connect(self):
         self.client = MongoClient(self.host)
-        return True
+        self.db = self.client[database_name]
+        self.collection = self.db[document_name]
 
-    def insert_data(self, database_name: str, document_name: str, data: Document or Sequence[Document]):
-        db = self.client[database_name]
-        collection = db[document_name]
+    def count_documents(self, filters: Filter={}) -> int:
+        return self.collection.count_documents(filters)
+
+    def drop_documents(self):
+        self.collection.drop()
+
+    def insert_data(self, data: Document or Sequence[Document]):
         if not isinstance(data, Sequence):
-            collection.insert_one(data)
+            self.collection.insert_one(data)
         else:
-            collection.insert_many(data)
+            self.collection.insert_many(data)
 
-    def search_data(self, database_name: str, document_name: str) -> Sequence[Document]:
-        db = self.client[database_name]
-        collection = db[document_name]
-        items = collection.find()
+    def search_data(self, filters: Filter={}) -> Sequence[Document]:
+        items = self.collection.find(filters)
         return [item for item in items]
 
-    def update_data(self, database_name: str, document_name: str, filters: Filter, update: Document):
-        db = self.client[database_name]
-        collection = db[document_name]
-        if not isinstance(update, Sequence):
-            collection.update_one(filters, update)
-        else:
-            collection.update_many(filters, update)
-
-    def delete_data(self, database_name: str, document_name: str, filters: Filter, how: str="one"):
-        db = self.client[database_name]
-        collection = db[document_name]
+    def update_data(self, filters: Filter, update: Document, how: str="one"):
+        how = how.lower()
         if how == "one":
-            collection.delete_one(filters)
+            self.collection.update_one(filters, update)
         elif how == "many":
-            collection.delete_many(filters)
+            self.collection.update_many(filters, update)
+        else:
+            raise ValueError(f"Update method is either 'single' or 'many' but you type {how}")
+
+    def delete_data(self, filters: Filter, how: str="one"):
+        if how == "one":
+            self.collection.delete_one(filters)
+        elif how == "many":
+            self.collection.delete_many(filters)
         else:
             raise ValueError(f"Delete method is either 'single' or 'many' but you type {how}")
 
@@ -78,10 +73,10 @@ class MongoDB(DatabaseServer):
 class ES(DatabaseServer):
     def __init__(self, host: str):
         self.host = host
-        self.client = None
+        self.client = Elasticsearch(hosts=self.host, basic_auth=(username, password), verify_certs=False)
 
     def connect(self, username: str, password: str):
-        self.client = Elasticsearch(hosts=self.host, basic_auth=(username, password), verify_certs=False)
+        
         return True
 
     def insert_data(self, index_name: str, data: Mapping[str, str] or Sequence[Document]):
@@ -108,11 +103,9 @@ if __name__ == "__main__":
     
     import constant as const
 
-    mongo_server = MongoDB(host=const.HOST_MONGODB)
-    mongo_server.connect()
+    mongo_server = MongoDB(host=const.HOST_MONGODB, database_name="rakka", document_name="rakka")
 
-    es_server = ES(host=const.HOST_ES)
-    es_server.connect(username=const.USER_ES, password=const.PWD_ES)
+    es_server = ES(host=const.HOST_ES, username=const.USER_ES, password=const.PWD_ES)
 
     dummy_data = {"name": "rakka", "job": "entepreneur"}
     print(es_server.client)
