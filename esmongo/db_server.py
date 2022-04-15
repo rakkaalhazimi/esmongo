@@ -8,7 +8,7 @@ from elasticsearch.helpers import bulk
 from elastic_transport import ObjectApiResponse
 
 
-Document = Filter = Mapping[str, Any]
+Document = Filter = Query = Script = Mapping[str, Any]
 
 class DatabaseServer(ABC):
     @abstractmethod
@@ -75,7 +75,7 @@ class ES(DatabaseServer):
         self.host = host
         self.client = Elasticsearch(hosts=self.host, basic_auth=(username, password), verify_certs=False)
 
-    def insert_data(self, index_name: str, data: Mapping[str, str] or Sequence[Document]):
+    def insert_data(self, index_name: str, data: Document or Sequence[Document]):
         if not isinstance(data, Sequence):
             self.client.create(index=index_name, id=uuid4(), document=data)
         else:
@@ -88,11 +88,16 @@ class ES(DatabaseServer):
         items = self.client.search(index=index_name)
         return items
 
-    def update_data(self):
-        pass
+    def update_data(self, index_name:str, query: Query, update: Document):
+        script = {
+            "source": ";".join(f"ctx._source['{key}']={value}" for key, value in update.items()),
+            "lang": "painless"
+        }
 
-    def delete_data(self, index_name:str, id_: str):
-        self.client.delete(index=index_name, id=id_)
+        self.client.update_by_query(index=index_name, query=query, script=script)
+
+    def delete_data(self, index_name:str, query: Query):
+        self.client.delete_by_query(index=index_name, query=query)
 
 
 if __name__ == "__main__":
