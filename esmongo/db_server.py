@@ -71,13 +71,9 @@ class MongoDB(DatabaseServer):
 
 
 class ES(DatabaseServer):
-    def __init__(self, host: str):
+    def __init__(self, host: str, username: str, password: str):
         self.host = host
         self.client = Elasticsearch(hosts=self.host, basic_auth=(username, password), verify_certs=False)
-
-    def connect(self, username: str, password: str):
-        
-        return True
 
     def insert_data(self, index_name: str, data: Mapping[str, str] or Sequence[Document]):
         if not isinstance(data, Sequence):
