@@ -39,7 +39,7 @@ class MongoDB(DatabaseServer):
     def count_documents(self, filters: Filter = {}) -> int:
         return self.collection.count_documents(filters)
 
-    def drop_documents(self):
+    def drop_collections(self):
         self.collection.drop()
 
     def insert_data(self, data: Document or Sequence[Document]):
@@ -81,8 +81,11 @@ class ES(DatabaseServer):
             hosts=self.host, basic_auth=(username, password), verify_certs=False
         )
 
-    def count_index(self, index_name: str) -> ObjectApiResponse:
-        return self.client.count(index=index_name)
+    def quote_string(self, data):
+        return f"'{data}'" if type(data) == str else data
+
+    def count_documents(self, index_name: str, query: str = None) -> ObjectApiResponse:
+        return self.client.count(index=index_name, query=query)
 
     def drop_index(self, index_name: str) -> ObjectApiResponse:
         return self.client.indices.delete(index=index_name)
@@ -106,15 +109,15 @@ class ES(DatabaseServer):
             )
             return bulk(client=self.client, actions=actions, refresh=True)
 
-    def search_data(self, index_name: str) -> ObjectApiResponse:
-        return self.client.search(index=index_name)
+    def search_data(self, index_name: str, query: Query = None) -> ObjectApiResponse:
+        return self.client.search(index=index_name, query=query)
 
     def update_data(
         self, index_name: str, query: Query, update: Document, how: str = "one"
     ) -> ObjectApiResponse:
         script = {
             "source": ";".join(
-                f"ctx._source['{key}']={value}" for key, value in update.items()
+                f"ctx._source['{key}']={self.quote_string(value)}" for key, value in update.items()
             ),
             "lang": "painless",
         }
@@ -132,7 +135,7 @@ class ES(DatabaseServer):
                 f"Update method is either 'one' or 'many' but you type {how}"
             )
 
-    def delete_data(self, index_name: str, query: Query) -> ObjectApiResponse:
+    def delete_data(self, index_name: str, query: Query, how: str = "one") -> ObjectApiResponse:
         how = how.lower()
         if how == "one":
             return self.client.delete_by_query(

@@ -5,6 +5,7 @@ from esmongo.loader import load_dummy_data
 
 
 class TestMongoDB:
+    """Test """
     dummy = load_dummy_data()
     server = MongoDB(
         host=const.HOST_MONGODB,
@@ -13,7 +14,7 @@ class TestMongoDB:
     )
 
     # Drop collection before start
-    server.drop_documents()
+    server.drop_collections()
 
     def test_insert_single_data(self):
         self.server.insert_data(data=self.dummy["dummy_data_1"])
@@ -30,16 +31,18 @@ class TestMongoDB:
         assert len(items) == 3
 
     def test_update_single_data(self):
+        update = {"$set": self.dummy["dummy_update"]}
         self.server.update_data(
-            filters=self.dummy["dummy_filter_update"], update=self.dummy["dummy_update"]
+            filters=self.dummy["dummy_filter_update"], update=update
         )
         assert (
             self.server.count_documents(filters=self.dummy["dummy_filter_update"]) == 1
         )
 
     def test_update_many_data(self):
+        update = {"$set": self.dummy["dummy_update"]}
         self.server.update_data(
-            filters=self.dummy["dummy_filter_update"], update=self.dummy["dummy_update"]
+            filters=self.dummy["dummy_filter_update"], update=update
         )
         assert (
             self.server.count_documents(filters=self.dummy["dummy_filter_update"]) == 0
@@ -54,6 +57,7 @@ class TestMongoDB:
 
     def test_delete_many_data(self):
         self.server.delete_data(self.dummy["dummy_filter_delete_2"], how="many")
+        print(self.server.search_data())
         assert (
             self.server.count_documents(filters=self.dummy["dummy_filter_delete_2"])
             == 0
@@ -74,7 +78,7 @@ class TestES:
         self.server.insert_data(
             index_name=self.dummy["dummy_index"], data=self.dummy["dummy_data_1"]
         )
-        resp = self.server.count_index(index_name=self.dummy["dummy_index"])
+        resp = self.server.count_documents(index_name=self.dummy["dummy_index"])
         self.server.search_data(self.dummy["dummy_index"])
         assert resp["count"] == 1
 
@@ -83,25 +87,63 @@ class TestES:
             index_name=self.dummy["dummy_index"],
             data=[self.dummy["dummy_data_2"], self.dummy["dummy_data_3"]],
         )
-        resp = self.server.count_index(index_name=self.dummy["dummy_index"])
+        resp = self.server.count_documents(index_name=self.dummy["dummy_index"])
         assert resp["count"] == 3
 
-    # def test_search_data(self):
-    #     items = self.server.search_data(filters={})
-    #     assert len(items) == 3
+    def test_search_data(self):
+        resp = self.server.search_data(index_name=self.dummy["dummy_index"])
+        assert len(resp["hits"]) == 3
 
-    # def test_update_single_data(self):
-    #     self.server.update_data(filters=self.dummy["dummy_filter_update"], update=self.dummy["dummy_update"])
-    #     assert self.server.count_documents(filters=self.dummy["dummy_filter_update"]) == 1
+    def test_update_single_data(self):
+        query = {"match": self.dummy["dummy_filter_update"]}
+        self.server.update_data(
+            index_name=self.dummy["dummy_index"],
+            query=query,
+            update=self.dummy["dummy_update"],
+            how="one",
+        )
+        resp = self.server.count_documents(
+            index_name=self.dummy["dummy_index"], query=query
+        )
+        assert resp["count"] == 1
 
-    # def test_update_many_data(self):
-    #     self.server.update_data(filters=dummy["dummy_filter_update"], update=dummy["dummy_update"])
-    #     assert self.server.count_documents(filters=dummy["dummy_filter_update"]) == 0
+    def test_update_many_data(self):
+        query = {"match": self.dummy["dummy_filter_update"]}
+        self.server.update_data(
+            index_name=self.dummy["dummy_index"],
+            query=query,
+            update=self.dummy["dummy_update"],
+            how="many",
+        )
+        resp = self.server.count_documents(
+            index_name=self.dummy["dummy_index"], query=query
+        )
+        assert resp["count"] == 0
 
-    # def test_delete_single_data(self):
-    #     self.server.delete_data(dummy["dummy_filter_delete_1"], how="one")
-    #     assert self.server.count_documents(filters=dummy["dummy_filter_delete_1"]) == 0
+    def test_delete_single_data(self):
+        query = {"match": self.dummy["dummy_filter_delete_1"]}
+        self.server.delete_data(
+            index_name=self.dummy["dummy_index"],
+            query=query,
+            how="one",
+        )
+        resp = self.server.count_documents(
+            index_name=self.dummy["dummy_index"]
+        )
+        assert resp["count"] == 2
 
-    # def test_delete_many_data(self):
-    #     self.server.delete_data(dummy["dummy_filter_delete_2"], how="many")
-    #     assert self.server.count_documents(filters=dummy["dummy_filter_delete_2"]) == 0
+    def test_delete_many_data(self):
+        query = {"match": self.dummy["dummy_filter_delete_2"]}
+        self.server.delete_data(
+            index_name=self.dummy["dummy_index"],
+            query=query,
+            how="many",
+        )
+        resp = self.server.search_data(index_name=self.dummy["dummy_index"])
+        print(resp)
+        resp = self.server.count_documents(
+            index_name=self.dummy["dummy_index"]
+        )
+        assert resp["count"] == 0
+
+    
