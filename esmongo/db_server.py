@@ -1,4 +1,3 @@
-from abc import ABC, abstractmethod
 from typing import Sequence, Mapping, Any
 from uuid import uuid4
 
@@ -7,27 +6,10 @@ from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 from elastic_transport import ObjectApiResponse
 
+from models import DatabaseServer
+
 
 Document = Filter = Query = Script = Mapping[str, Any]
-
-
-class DatabaseServer(ABC):
-    @abstractmethod
-    def insert_data(self, data, **kwargs):
-        pass
-
-    @abstractmethod
-    def search_data(self):
-        pass
-
-    @abstractmethod
-    def update_data(self):
-        pass
-
-    @abstractmethod
-    def delete_data(self):
-        pass
-
 
 class MongoDB(DatabaseServer):
     def __init__(self, host: str, database_name: str, document_name: str):
