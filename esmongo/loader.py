@@ -1,6 +1,10 @@
 import pandas as pd
 
 
+def load_from_csv(path):
+    df = pd.read_csv(path)
+    return [dict(row) for _, row in df.iterrows()]
+
 def load_dummy_data():
     dummy_data_1 = {"name": "john", "age": 24}
     dummy_data_2 = {"name": "reiner", "age": 25}

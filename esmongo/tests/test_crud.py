@@ -101,7 +101,7 @@ class TestES:
 
     # 2. Drop index before start, catch the error when no index is found.
     try:
-        server.drop_index(index_name=dummy["dummy_index"])
+        server.drop_collections(index_name=dummy["dummy_index"])
     except NotFoundError:
         print("No index found, continuing the test.")
 

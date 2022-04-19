@@ -69,7 +69,7 @@ class ES(DatabaseServer):
     def count_documents(self, index_name: str, query: str = None) -> ObjectApiResponse:
         return self.client.count(index=index_name, query=query)
 
-    def drop_index(self, index_name: str) -> ObjectApiResponse:
+    def drop_collections(self, index_name: str) -> ObjectApiResponse:
         return self.client.indices.delete(index=index_name)
 
     def insert_data(

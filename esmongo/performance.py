@@ -33,8 +33,9 @@ class DbPerformance:
         print("=" * 20)
 
         for task in self.tasks:
-            ...
+            record_runtime(task.operation)(**task.kwargs)
 
+        self.server.drop_collections()
 
 def sleep_task():
     time.sleep(2)
