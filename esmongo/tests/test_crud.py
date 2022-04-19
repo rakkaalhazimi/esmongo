@@ -97,35 +97,37 @@ class TestES:
 
     # 1. Initialize data and connection.
     dummy = load_dummy_data()
-    server = ES(host=const.HOST_ES, username=const.USER_ES, password=const.PWD_ES)
+    server = ES(
+        host=const.HOST_ES,
+        username=const.USER_ES,
+        password=const.PWD_ES,
+        index_name=dummy["dummy_index"],
+    )
 
     # 2. Drop index before start, catch the error when no index is found.
     try:
-        server.drop_collections(index_name=dummy["dummy_index"])
+        server.drop_collections()
     except NotFoundError:
         print("No index found, continuing the test.")
 
     # 3. Test CRUD operations on database server.
     def test_insert_single_data(self):
-        self.server.insert_data(
-            index_name=self.dummy["dummy_index"], data=self.dummy["dummy_data_1"]
-        )
-        resp = self.server.count_documents(index_name=self.dummy["dummy_index"])
-        self.server.search_data(self.dummy["dummy_index"])
+        self.server.insert_data(data=self.dummy["dummy_data_1"])
+        resp = self.server.count_documents()
+        self.server.search_data()
         assert resp["count"] == 1
 
     def test_insert_many_data(self):
         self.server.insert_data(
-            index_name=self.dummy["dummy_index"],
             data=[self.dummy["dummy_data_2"], self.dummy["dummy_data_3"]],
         )
-        resp = self.server.count_documents(index_name=self.dummy["dummy_index"])
+        resp = self.server.count_documents()
         assert resp["count"] == 3
 
     def test_search_data(self):
         # Search data on ElasticSearch returns dict-like data with many keys.
         # Get "hits" key to obtain the documents results
-        resp = self.server.search_data(index_name=self.dummy["dummy_index"])
+        resp = self.server.search_data()
         assert len(resp["hits"]) == 3
 
     def test_update_single_data(self):
@@ -134,14 +136,11 @@ class TestES:
 
         # For single data, set "how" kwarg to "one"
         self.server.update_data(
-            index_name=self.dummy["dummy_index"],
             query=query,
             update=self.dummy["dummy_update"],
             how="one",
         )
-        resp = self.server.count_documents(
-            index_name=self.dummy["dummy_index"], query=query
-        )
+        resp = self.server.count_documents(query=query)
         assert resp["count"] == 1
 
     def test_update_many_data(self):
@@ -150,14 +149,11 @@ class TestES:
 
         # For multiple data, set "how" kwarg to "many"
         self.server.update_data(
-            index_name=self.dummy["dummy_index"],
             query=query,
             update=self.dummy["dummy_update"],
             how="many",
         )
-        resp = self.server.count_documents(
-            index_name=self.dummy["dummy_index"], query=query
-        )
+        resp = self.server.count_documents(query=query)
         assert resp["count"] == 0
 
     def test_delete_single_data(self):
@@ -166,11 +162,10 @@ class TestES:
 
         # For single data, set "how" kwarg to "one"
         self.server.delete_data(
-            index_name=self.dummy["dummy_index"],
             query=query,
             how="one",
         )
-        resp = self.server.count_documents(index_name=self.dummy["dummy_index"])
+        resp = self.server.count_documents()
         assert resp["count"] == 2
 
     def test_delete_many_data(self):
@@ -179,10 +174,9 @@ class TestES:
 
         # For multiple data, set "how" kwarg to "many"
         self.server.delete_data(
-            index_name=self.dummy["dummy_index"],
             query=query,
             how="many",
         )
-        resp = self.server.search_data(index_name=self.dummy["dummy_index"])
-        resp = self.server.count_documents(index_name=self.dummy["dummy_index"])
+        resp = self.server.search_data()
+        resp = self.server.count_documents()
         assert resp["count"] == 0

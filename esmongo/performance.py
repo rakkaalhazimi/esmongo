@@ -2,7 +2,7 @@ import time
 import functools
 from typing import Sequence
 
-from models import DatabaseServer, Task
+from .models import DatabaseServer, Task
 
 
 def record_runtime(func):
@@ -28,13 +28,16 @@ class DbPerformance:
         self.tasks = tasks
 
     def start(self):
+        # Show Database Name
         cls_name = self.server.__class__.__name__
         print(f"{cls_name} Server")
         print("=" * 20)
 
+        # Do all task here
         for task in self.tasks:
             record_runtime(task.operation)(**task.kwargs)
 
+        # Drop all data on completions
         self.server.drop_collections()
 
 def sleep_task():

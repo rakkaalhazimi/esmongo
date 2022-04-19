@@ -6,7 +6,7 @@ from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 from elastic_transport import ObjectApiResponse
 
-from models import DatabaseServer
+from .models import DatabaseServer
 
 
 Document = Filter = Query = Script = Mapping[str, Any]
@@ -57,33 +57,34 @@ class MongoDB(DatabaseServer):
 
 
 class ES(DatabaseServer):
-    def __init__(self, host: str, username: str, password: str):
+    def __init__(self, host: str, username: str, password: str, index_name: str):
         self.host = host
         self.client = Elasticsearch(
             hosts=self.host, basic_auth=(username, password), verify_certs=False
         )
+        self.index_name = index_name
 
     def quote_string(self, data):
         return f"'{data}'" if type(data) == str else data
 
-    def count_documents(self, index_name: str, query: str = None) -> ObjectApiResponse:
-        return self.client.count(index=index_name, query=query)
+    def count_documents(self, query: str = None) -> ObjectApiResponse:
+        return self.client.count(index=self.index_name, query=query)
 
-    def drop_collections(self, index_name: str) -> ObjectApiResponse:
-        return self.client.indices.delete(index=index_name)
+    def drop_collections(self) -> ObjectApiResponse:
+        return self.client.indices.delete(index=self.index_name)
 
     def insert_data(
-        self, index_name: str, data: Document or Sequence[Document]
+        self, data: Document or Sequence[Document]
     ) -> ObjectApiResponse:
         if not isinstance(data, Sequence):
             return self.client.create(
-                index=index_name, id=uuid4(), document=data, refresh=True
+                index=self.index_name, id=uuid4(), document=data, refresh=True
             )
         else:
             actions = (
                 {
                     "_op_type": "create",
-                    "_index": index_name,
+                    "_index": self.index_name,
                     "_id": uuid4(),
                     "_source": doc,
                 }
@@ -91,11 +92,11 @@ class ES(DatabaseServer):
             )
             return bulk(client=self.client, actions=actions, refresh=True)
 
-    def search_data(self, index_name: str, query: Query = None) -> ObjectApiResponse:
-        return self.client.search(index=index_name, query=query)
+    def search_data(self, query: Query = None) -> ObjectApiResponse:
+        return self.client.search(index=self.index_name, query=query)
 
     def update_data(
-        self, index_name: str, query: Query, update: Document, how: str = "one"
+        self, query: Query, update: Document, how: str = "one"
     ) -> ObjectApiResponse:
         script = {
             "source": ";".join(
@@ -106,26 +107,26 @@ class ES(DatabaseServer):
         how = how.lower()
         if how == "one":
             return self.client.update_by_query(
-                index=index_name, query=query, script=script, max_docs=1, refresh=True
+                index=self.index_name, query=query, script=script, max_docs=1, refresh=True
             )
         elif how == "many":
             return self.client.update_by_query(
-                index=index_name, query=query, script=script, refresh=True
+                index=self.index_name, query=query, script=script, refresh=True
             )
         else:
             raise ValueError(
                 f"Update method is either 'one' or 'many' but you type {how}"
             )
 
-    def delete_data(self, index_name: str, query: Query, how: str = "one") -> ObjectApiResponse:
+    def delete_data(self, query: Query, how: str = "one") -> ObjectApiResponse:
         how = how.lower()
         if how == "one":
             return self.client.delete_by_query(
-                index=index_name, query=query, max_docs=1, refresh=True
+                index=self.index_name, query=query, max_docs=1, refresh=True
             )
         elif how == "many":
             return self.client.delete_by_query(
-                index=index_name, query=query, refresh=True
+                index=self.index_name, query=query, refresh=True
             )
         else:
             raise ValueError(
@@ -141,7 +142,7 @@ if __name__ == "__main__":
         host=const.HOST_MONGODB, database_name="rakka", document_name="rakka"
     )
 
-    es_server = ES(host=const.HOST_ES, username=const.USER_ES, password=const.PWD_ES)
+    es_server = ES(host=const.HOST_ES, username=const.USER_ES, password=const.PWD_ES, index_name="user")
 
     dummy_data = {"name": "rakka", "job": "entepreneur"}
     print(es_server.client)
