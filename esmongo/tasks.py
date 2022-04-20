@@ -4,12 +4,12 @@ from .db_client import MongoDB, ES
 from .loader import load_from_csv
 from .models import Task
 
-INDEX_NAME = "performance"
+
 
 # MongoDB Task
 # Initiate connection
 mongo_client = MongoDB(host=c.HOST_MONGODB,
-                       db_name=INDEX_NAME, doc_name=INDEX_NAME)
+                       db_name=c.INDEX_NAME, doc_name=c.INDEX_NAME)
 
 # Data Source
 json_data = load_from_csv("esmongo/data/test_data.csv")
@@ -37,7 +37,7 @@ mongodb_tasks = [
 # ElasticSearch Task
 # Initiate connection
 es_client = ES(host=c.HOST_ES, user=c.USER_ES,
-               pwd=c.PWD_ES, index_name=INDEX_NAME)
+               pwd=c.PWD_ES, index_name=c.INDEX_NAME)
 
 # Data Source
 json_data = load_from_csv("esmongo/data/test_data.csv")
