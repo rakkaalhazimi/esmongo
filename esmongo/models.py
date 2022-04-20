@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Callable, Mapping
 
 
-class DatabaseServer(ABC):
+class DBClient(ABC):
     @abstractmethod
     def insert_data(self):
         pass

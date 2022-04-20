@@ -1,6 +1,6 @@
 from elasticsearch import NotFoundError
 import esmongo.constant as const
-from esmongo.db_server import MongoDB, ES
+from esmongo.db_client import MongoDB, ES
 from esmongo.loader import load_dummy_data
 
 

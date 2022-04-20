@@ -2,7 +2,7 @@ import time
 import functools
 from typing import Sequence
 
-from .models import DatabaseServer, Task
+from .models import DBClient, Task
 
 
 def record_runtime(func):
@@ -22,8 +22,8 @@ def record_runtime(func):
     return wrapper
 
 
-class DbPerformance:
-    def __init__(self, server: DatabaseServer, tasks: Sequence[Task]):
+class DBPerformance:
+    def __init__(self, server: DBClient, tasks: Sequence[Task]):
         self.server = server
         self.tasks = tasks
 

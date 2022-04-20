@@ -6,12 +6,12 @@ from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 from elastic_transport import ObjectApiResponse
 
-from .models import DatabaseServer
+from .models import DBClient
 
 
 Document = Filter = Query = Script = Mapping[str, Any]
 
-class MongoDB(DatabaseServer):
+class MongoDB(DBClient):
     def __init__(self, host: str, database_name: str, document_name: str):
         self.host = host
         self.client = MongoClient(self.host)
@@ -56,7 +56,7 @@ class MongoDB(DatabaseServer):
             )
 
 
-class ES(DatabaseServer):
+class ES(DBClient):
     def __init__(self, host: str, username: str, password: str, index_name: str):
         self.host = host
         self.client = Elasticsearch(
