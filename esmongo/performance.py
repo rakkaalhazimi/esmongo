@@ -44,6 +44,9 @@ class DBPerformanceTest:
         # Drop all client data upon completions
         self.client.drop_collections()
 
+        # Add new line
+        print()
+
 
 def sleep_task():
     time.sleep(2)
