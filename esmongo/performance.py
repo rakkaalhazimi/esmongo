@@ -26,8 +26,7 @@ class DBPerformanceTest:
     def __init__(self, client: DBClient, tasks: Sequence[Task]):
         self.client = client
         self.tasks = tasks
-        # Drop all client data first
-        self.client.drop_collections()
+        
 
     def run_task(self, task: Task):
         return record_runtime(task.operation)(**task.operation_kwargs)
@@ -42,6 +41,8 @@ class DBPerformanceTest:
         for task in self.tasks:
             self.run_task(task)
 
+        # Drop all client data upon completions
+        self.client.drop_collections()
 
 def sleep_task():
     time.sleep(2)
