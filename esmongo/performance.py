@@ -1,6 +1,6 @@
 import time
 import functools
-from typing import Sequence
+from typing import Callable, Mapping
 
 from .models import DBClient, Task
 
@@ -22,23 +22,26 @@ def record_runtime(func):
     return wrapper
 
 
-class DBPerformance:
-    def __init__(self, server: DBClient, tasks: Sequence[Task]):
-        self.server = server
-        self.tasks = tasks
+class DBPerformanceTest:
+    def __init__(self, client: DBClient):
+        self.client = client
+        self.tasks = []
+
+    def register_task(self, operation: Callable, operation_kwargs: Mapping):
+        self.tasks.append(Task(operation=operation, operation_kwargs=operation_kwargs))
 
     def start(self):
         # Show Database Name
-        cls_name = self.server.__class__.__name__
+        cls_name = self.client.__class__.__name__
         print(f"{cls_name} Server")
         print("=" * 20)
 
         # Do all task here
         for task in self.tasks:
-            record_runtime(task.operation)(**task.kwargs)
+            record_runtime(task.operation)(**task.operation_kwargs)
 
         # Drop all data on completions
-        self.server.drop_collections()
+        self.client.drop_collections()
 
 def sleep_task():
     time.sleep(2)

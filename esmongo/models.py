@@ -24,4 +24,4 @@ class DBClient(ABC):
 @dataclass
 class Task:
     operation: Callable
-    kwargs: Mapping
+    operation_kwargs: Mapping
