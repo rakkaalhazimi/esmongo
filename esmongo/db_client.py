@@ -13,34 +13,34 @@ Document = Filter = Query = Script = Mapping[str, Any]
 
 
 class MongoDB(DBClient):
-    def __init__(self, host: str, database_name: str, document_name: str):
+    def __init__(self, host: str, db_name: str, doc_name: str):
         self.host = host
         self.client = MongoClient(self.host)
-        self.db = self.client[database_name]
-        self.collection = self.db[document_name]
+        self.db = self.client[db_name]
+        self.ctn = self.db[doc_name]
 
     def count_documents(self, filters: Filter = {}) -> int:
-        return self.collection.count_documents(filters)
+        return self.ctn.count_documents(filters)
 
     def drop_collections(self):
-        self.collection.drop()
+        self.ctn.drop()
 
     def insert_data(self, data: Document or Sequence[Document]):
         if not isinstance(data, Sequence):
-            self.collection.insert_one(data)
+            self.ctn.insert_one(data)
         else:
-            self.collection.insert_many(data)
+            self.ctn.insert_many(data)
 
     def search_data(self, filters: Filter = {}) -> Sequence[Document]:
-        items = self.collection.find(filters)
+        items = self.ctn.find(filters)
         return [item for item in items]
 
     def update_data(self, filters: Filter, update: Document, how: str = "one"):
         how = how.lower()
         if how == "one":
-            self.collection.update_one(filters, update)
+            self.ctn.update_one(filters, update)
         elif how == "many":
-            self.collection.update_many(filters, update)
+            self.ctn.update_many(filters, update)
         else:
             raise ValueError(
                 f"Update method is either 'one' or 'many' but you type {how}"
@@ -48,9 +48,9 @@ class MongoDB(DBClient):
 
     def delete_data(self, filters: Filter, how: str = "one"):
         if how == "one":
-            self.collection.delete_one(filters)
+            self.ctn.delete_one(filters)
         elif how == "many":
-            self.collection.delete_many(filters)
+            self.ctn.delete_many(filters)
         else:
             raise ValueError(
                 f"Delete method is either 'one' or 'many' but you type {how}"
@@ -58,10 +58,10 @@ class MongoDB(DBClient):
 
 
 class ES(DBClient):
-    def __init__(self, host: str, username: str, password: str, index_name: str):
+    def __init__(self, host: str, user: str, pwd: str, index_name: str):
         self.host = host
         self.client = Elasticsearch(
-            hosts=self.host, basic_auth=(username, password), verify_certs=False
+            hosts=self.host, basic_auth=(user, pwd), verify_certs=False
         )
         self.index_name = index_name
 
@@ -151,13 +151,13 @@ if __name__ == "__main__":
     import constant as const
 
     mongo_server = MongoDB(
-        host=const.HOST_MONGODB, database_name="rakka", document_name="rakka"
+        host=const.HOST_MONGODB, db_name="rakka", doc_name="rakka"
     )
 
     es_server = ES(
         host=const.HOST_ES,
-        username=const.USER_ES,
-        password=const.PWD_ES,
+        user=const.USER_ES,
+        pwd=const.PWD_ES,
         index_name="user",
     )
 
