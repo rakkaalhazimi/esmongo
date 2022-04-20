@@ -11,6 +11,7 @@ from .models import DBClient
 
 Document = Filter = Query = Script = Mapping[str, Any]
 
+
 class MongoDB(DBClient):
     def __init__(self, host: str, database_name: str, document_name: str):
         self.host = host
@@ -67,29 +68,41 @@ class ES(DBClient):
     def quote_string(self, data):
         return f"'{data}'" if type(data) == str else data
 
+    def create_actions_query(self, data: Sequence[Document]) -> Query:
+        actions = [
+            {
+                "_op_type": "create",
+                "_index": self.index_name,
+                "_id": uuid4(),
+                "_source": doc,
+            }
+            for doc in data
+        ]
+        return actions
+
+    def create_script_query(self, data: Document) -> Script:
+        script = {
+            "source": ";".join(
+                f"ctx._source['{key}']={self.quote_string(value)}"
+                for key, value in data.items()
+            ),
+            "lang": "painless",
+        }
+        return script
+
     def count_documents(self, query: str = None) -> ObjectApiResponse:
         return self.client.count(index=self.index_name, query=query)
 
     def drop_collections(self) -> ObjectApiResponse:
         return self.client.indices.delete(index=self.index_name)
 
-    def insert_data(
-        self, data: Document or Sequence[Document]
-    ) -> ObjectApiResponse:
+    def insert_data(self, data: Document or Sequence[Document]) -> ObjectApiResponse:
         if not isinstance(data, Sequence):
             return self.client.create(
                 index=self.index_name, id=uuid4(), document=data, refresh=True
             )
         else:
-            actions = (
-                {
-                    "_op_type": "create",
-                    "_index": self.index_name,
-                    "_id": uuid4(),
-                    "_source": doc,
-                }
-                for doc in data
-            )
+            actions = self.create_actions_query(data=data)
             return bulk(client=self.client, actions=actions, refresh=True)
 
     def search_data(self, query: Query = None) -> ObjectApiResponse:
@@ -98,16 +111,15 @@ class ES(DBClient):
     def update_data(
         self, query: Query, update: Document, how: str = "one"
     ) -> ObjectApiResponse:
-        script = {
-            "source": ";".join(
-                f"ctx._source['{key}']={self.quote_string(value)}" for key, value in update.items()
-            ),
-            "lang": "painless",
-        }
+        script = self.create_script_query(data=update)
         how = how.lower()
         if how == "one":
             return self.client.update_by_query(
-                index=self.index_name, query=query, script=script, max_docs=1, refresh=True
+                index=self.index_name,
+                query=query,
+                script=script,
+                max_docs=1,
+                refresh=True,
             )
         elif how == "many":
             return self.client.update_by_query(
@@ -142,7 +154,12 @@ if __name__ == "__main__":
         host=const.HOST_MONGODB, database_name="rakka", document_name="rakka"
     )
 
-    es_server = ES(host=const.HOST_ES, username=const.USER_ES, password=const.PWD_ES, index_name="user")
+    es_server = ES(
+        host=const.HOST_ES,
+        username=const.USER_ES,
+        password=const.PWD_ES,
+        index_name="user",
+    )
 
     dummy_data = {"name": "rakka", "job": "entepreneur"}
     print(es_server.client)
