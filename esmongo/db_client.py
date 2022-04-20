@@ -7,6 +7,7 @@ from elasticsearch.helpers import bulk
 from elastic_transport import ObjectApiResponse
 
 from .models import DBClient
+from .performance import CodeTimer
 
 
 Document = Filter = Query = Script = Mapping[str, Any]
@@ -27,20 +28,25 @@ class MongoDB(DBClient):
 
     def insert_data(self, data: Document or Sequence[Document]):
         if not isinstance(data, Sequence):
-            self.collection.insert_one(data)
+            with CodeTimer("Insert Single Data"):
+                self.collection.insert_one(data)
         else:
-            self.collection.insert_many(data)
+            with CodeTimer("Insert Multiple Data"):
+                self.collection.insert_many(data)
 
     def search_data(self, filters: Filter = {}) -> Sequence[Document]:
-        items = self.collection.find(filters)
+        with CodeTimer("Search Data"):
+            items = self.collection.find(filters)
         return [item for item in items]
 
     def update_data(self, filters: Filter, update: Document, how: str = "one"):
         how = how.lower()
         if how == "one":
-            self.collection.update_one(filters, update)
+            with CodeTimer("Update Single Data"):
+                self.collection.update_one(filters, update)
         elif how == "many":
-            self.collection.update_many(filters, update)
+            with CodeTimer("Update Multiple Data"):
+                self.collection.update_many(filters, update)
         else:
             raise ValueError(
                 f"Update method is either 'one' or 'many' but you type {how}"
@@ -48,9 +54,11 @@ class MongoDB(DBClient):
 
     def delete_data(self, filters: Filter, how: str = "one"):
         if how == "one":
-            self.collection.delete_one(filters)
+            with CodeTimer("Delete Single Data"):
+                self.collection.delete_one(filters)
         elif how == "many":
-            self.collection.delete_many(filters)
+            with CodeTimer("Delete Multiple Data"):
+                self.collection.delete_many(filters)
         else:
             raise ValueError(
                 f"Delete method is either 'one' or 'many' but you type {how}"
@@ -98,15 +106,18 @@ class ES(DBClient):
 
     def insert_data(self, data: Document or Sequence[Document]) -> ObjectApiResponse:
         if not isinstance(data, Sequence):
-            return self.client.create(
-                index=self.index_name, id=uuid4(), document=data, refresh=True
-            )
+            with CodeTimer("Insert Single Data"):
+                return self.client.create(
+                    index=self.index_name, id=uuid4(), document=data, refresh=True
+                )
         else:
             actions = self.create_actions_query(data=data)
-            return bulk(client=self.client, actions=actions, refresh=True)
+            with CodeTimer("Insert Multiple Data"):
+                return bulk(client=self.client, actions=actions, refresh=True)
 
     def search_data(self, query: Query = None) -> ObjectApiResponse:
-        return self.client.search(index=self.index_name, query=query)
+        with CodeTimer("Search Data"):
+            return self.client.search(index=self.index_name, query=query)
 
     def update_data(
         self, query: Query, update: Document, how: str = "one"
@@ -114,17 +125,19 @@ class ES(DBClient):
         script = self.create_script_query(data=update)
         how = how.lower()
         if how == "one":
-            return self.client.update_by_query(
-                index=self.index_name,
-                query=query,
-                script=script,
-                max_docs=1,
-                refresh=True,
-            )
+            with CodeTimer("Update Single Data"):
+                return self.client.update_by_query(
+                    index=self.index_name,
+                    query=query,
+                    script=script,
+                    max_docs=1,
+                    refresh=True,
+                )
         elif how == "many":
-            return self.client.update_by_query(
-                index=self.index_name, query=query, script=script, refresh=True
-            )
+            with CodeTimer("Update Multiple Data"):
+                return self.client.update_by_query(
+                    index=self.index_name, query=query, script=script, refresh=True
+                )
         else:
             raise ValueError(
                 f"Update method is either 'one' or 'many' but you type {how}"
@@ -133,33 +146,16 @@ class ES(DBClient):
     def delete_data(self, query: Query, how: str = "one") -> ObjectApiResponse:
         how = how.lower()
         if how == "one":
-            return self.client.delete_by_query(
-                index=self.index_name, query=query, max_docs=1, refresh=True
-            )
+            with CodeTimer("Delete Single Data"):
+                return self.client.delete_by_query(
+                    index=self.index_name, query=query, max_docs=1, refresh=True
+                )
         elif how == "many":
-            return self.client.delete_by_query(
-                index=self.index_name, query=query, refresh=True
-            )
+            with CodeTimer("Delete Multiple Data"):
+                return self.client.delete_by_query(
+                    index=self.index_name, query=query, refresh=True
+                )
         else:
             raise ValueError(
                 f"Delete method is either 'one' or 'many' but you type {how}"
             )
-
-
-if __name__ == "__main__":
-
-    import constant as const
-
-    mongo_server = MongoDB(
-        host=const.HOST_MONGODB, db_name="rakka", doc_name="rakka"
-    )
-
-    es_server = ES(
-        host=const.HOST_ES,
-        user=const.USER_ES,
-        pwd=const.PWD_ES,
-        index_name="user",
-    )
-
-    dummy_data = {"name": "rakka", "job": "entepreneur"}
-    print(es_server.client)

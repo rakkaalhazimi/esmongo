@@ -22,6 +22,18 @@ def record_runtime(func):
 
     return wrapper
 
+          
+class CodeTimer:
+    def __init__(self, name=None):
+        self.name = f"'{name}'" if name else ''
+
+    def __enter__(self):
+        self.start = time.time()
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.took = (time.time() - self.start) * 1000.0
+        print(f"Code block {self.name:30} took: {self.took:.4f} ms")
+
 
 class DBPerformanceTest:
     def __init__(self, client: DBClient, tasks: Sequence[Task]):
@@ -29,7 +41,7 @@ class DBPerformanceTest:
         self.tasks = tasks
 
     def run_task(self, task: Task):
-        return record_runtime(task.operation)(**task.operation_kwargs)
+        return task.operation(**task.operation_kwargs)
 
     def start(self):
         # Show Database Name
