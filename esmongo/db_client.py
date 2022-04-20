@@ -17,30 +17,30 @@ class MongoDB(DBClient):
         self.host = host
         self.client = MongoClient(self.host)
         self.db = self.client[db_name]
-        self.ctn = self.db[doc_name]
+        self.collection = self.db[doc_name]
 
     def count_documents(self, filters: Filter = {}) -> int:
-        return self.ctn.count_documents(filters)
+        return self.collection.count_documents(filters)
 
     def drop_collections(self):
-        self.ctn.drop()
+        self.collection.drop()
 
     def insert_data(self, data: Document or Sequence[Document]):
         if not isinstance(data, Sequence):
-            self.ctn.insert_one(data)
+            self.collection.insert_one(data)
         else:
-            self.ctn.insert_many(data)
+            self.collection.insert_many(data)
 
     def search_data(self, filters: Filter = {}) -> Sequence[Document]:
-        items = self.ctn.find(filters)
+        items = self.collection.find(filters)
         return [item for item in items]
 
     def update_data(self, filters: Filter, update: Document, how: str = "one"):
         how = how.lower()
         if how == "one":
-            self.ctn.update_one(filters, update)
+            self.collection.update_one(filters, update)
         elif how == "many":
-            self.ctn.update_many(filters, update)
+            self.collection.update_many(filters, update)
         else:
             raise ValueError(
                 f"Update method is either 'one' or 'many' but you type {how}"
@@ -48,9 +48,9 @@ class MongoDB(DBClient):
 
     def delete_data(self, filters: Filter, how: str = "one"):
         if how == "one":
-            self.ctn.delete_one(filters)
+            self.collection.delete_one(filters)
         elif how == "many":
-            self.ctn.delete_many(filters)
+            self.collection.delete_many(filters)
         else:
             raise ValueError(
                 f"Delete method is either 'one' or 'many' but you type {how}"

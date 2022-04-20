@@ -1,6 +1,6 @@
 import time
 import functools
-from typing import Callable, Mapping, Sequence
+from typing import Sequence
 
 from .models import DBClient, Task
 
@@ -11,12 +11,13 @@ def record_runtime(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         start_time = time.time()
-        
+
         # Run functions
         result = func(*args, **kwargs)
 
         end_time = time.time()
-        print(f">> {func.__name__:<20} elapsed for {end_time - start_time:>10.7f} seconds")
+        print(
+            f">> {func.__name__:<20} elapsed for {end_time - start_time:>10.7f} seconds")
         return result
 
     return wrapper
@@ -26,7 +27,6 @@ class DBPerformanceTest:
     def __init__(self, client: DBClient, tasks: Sequence[Task]):
         self.client = client
         self.tasks = tasks
-        
 
     def run_task(self, task: Task):
         return record_runtime(task.operation)(**task.operation_kwargs)
@@ -44,6 +44,7 @@ class DBPerformanceTest:
         # Drop all client data upon completions
         self.client.drop_collections()
 
+
 def sleep_task():
     time.sleep(2)
     return
@@ -51,4 +52,3 @@ def sleep_task():
 
 if __name__ == "__main__":
     record_runtime(sleep_task)()
-

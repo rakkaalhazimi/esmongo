@@ -19,8 +19,8 @@ class TestMongoDB:
     dummy = load_dummy_data()
     server = MongoDB(
         host=const.HOST_MONGODB,
-        database_name=dummy["dummy_index"],
-        document_name=dummy["dummy_index"],
+        db_name=dummy["dummy_index"],
+        doc_name=dummy["dummy_index"],
     )
 
     # 2. Drop collection before start.
@@ -99,8 +99,8 @@ class TestES:
     dummy = load_dummy_data()
     server = ES(
         host=const.HOST_ES,
-        username=const.USER_ES,
-        password=const.PWD_ES,
+        user=const.USER_ES,
+        pwd=const.PWD_ES,
         index_name=dummy["dummy_index"],
     )
 
