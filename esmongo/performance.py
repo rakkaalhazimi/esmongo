@@ -29,7 +29,7 @@ class CodeTimer:
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.took = (time.time() - self.start) * 1000.0
-        print(f"Code block {self.name:30} took: {self.took:.4f} ms")
+        print(f"Operation {self.name:25} took: {self.took:.4f} ms")
 
 
 def sleep_task():
