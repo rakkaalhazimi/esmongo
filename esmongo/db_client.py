@@ -6,8 +6,8 @@ from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 from elastic_transport import ObjectApiResponse
 
-from .models import DBClient
-from .performance import CodeTimer
+from esmongo.models import DBClient
+from esmongo.performance import CodeTimer
 
 
 Document = Filter = Query = Script = Mapping[str, Any]

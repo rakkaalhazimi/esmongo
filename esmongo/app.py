@@ -1,9 +1,10 @@
 import warnings
 warnings.filterwarnings("ignore")
 
-from . import constant as c
-from .db_client import MongoDB, ES
-from .loader import load_from_csv
+from esmongo import constant as c
+from esmongo.db_client import MongoDB, ES
+from esmongo.loader import load_from_csv
+from esmongo.models import DBClient
 
 
 # Data source
