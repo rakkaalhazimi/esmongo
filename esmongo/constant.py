@@ -5,3 +5,5 @@ USER_ES = "elastic"
 PWD_ES = "ukPIFFhT0YVkh-epZtoE"
 
 INDEX_NAME = "performance"
+
+TEST_DATA_PATH = "esmongo/data/test_data.csv"

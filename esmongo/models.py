@@ -1,6 +1,4 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from typing import Callable, Mapping
 
 
 class DBClient(ABC):
@@ -19,9 +17,3 @@ class DBClient(ABC):
     @abstractmethod
     def delete_data(self):
         pass
-
-
-@dataclass
-class Task:
-    operation: Callable
-    operation_kwargs: Mapping

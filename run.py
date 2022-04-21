@@ -1,1 +1,1 @@
-from esmongo import main
+from esmongo import app
