@@ -28,8 +28,8 @@ class CodeTimer:
         self.start = time.time()
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.took = (time.time() - self.start) * 1000.0
-        print(f"Operation {self.name:25} took: {self.took:.4f} ms")
+        self.took = (time.time() - self.start)
+        print(f"Operation {self.name:25} took: {self.took:04.3f} seconds")
 
 
 def sleep_task():
