@@ -88,6 +88,15 @@ class ES(DBClient):
         ]
         return actions
 
+    def generate_actions_query(self, data: Sequence[Document]) -> Query:
+        for doc in data:
+            yield {
+                "_op_type": "create",
+                "_index": self.index_name,
+                "_id": uuid4(),
+                "_source": doc,
+            }
+
     def create_script_query(self, data: Document) -> Script:
         script = {
             "source": ";".join(
@@ -112,6 +121,7 @@ class ES(DBClient):
                 )
         else:
             actions = self.create_actions_query(data=data)
+            # actions = self.generate_actions_query(data=data)
             with CodeTimer("Insert Multiple Data"):
                 return bulk(client=self.client, actions=actions, refresh=True)
 
