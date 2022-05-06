@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from typing import Sequence, Mapping, Any
 from uuid import uuid4
 
@@ -6,11 +7,28 @@ from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 from elastic_transport import ObjectApiResponse
 
-from esmongo.models import DBClient
 from esmongo.performance import CodeTimer
 
 
 Document = Filter = Query = Script = Mapping[str, Any]
+
+
+class DBClient(ABC):
+    @abstractmethod
+    def insert_data(self):
+        pass
+
+    @abstractmethod
+    def search_data(self):
+        pass
+
+    @abstractmethod
+    def update_data(self):
+        pass
+
+    @abstractmethod
+    def delete_data(self):
+        pass
 
 
 class MongoDB(DBClient):
